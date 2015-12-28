@@ -9,6 +9,7 @@ import string
 import subprocess
 import time
 
+from passlib.hash import sha512_crypt
 from ConfigParser import SafeConfigParser
 
 '''
@@ -18,7 +19,7 @@ chmod +x rack
 ./rack servers instance list
 '''
 
-''' The order of servers in the customer dictionary determines the order of the internal IP addresses assigned to the servers.'''  
+''' The order of servers in the customer['servers'] list determines the order of the internal IP addresses assigned to the servers.'''  
 custID = "123456"
 customer = {        
                 'internalNetworkName': custID + '-INTERNAL-NETWORK',
@@ -75,7 +76,6 @@ class RackBob:
 
     def build_servers(self):
         serverNum = 1
-
         keyName = custID + "-SSHKEY"
         if not self.individualSSHkeys and not os.path.isfile(keyName):
             print("[*] Generating 1 SSH key for: " + custID)
@@ -94,7 +94,7 @@ class RackBob:
                 pass
 
         for srv in customer['servers']:
-            fh = open(srv['srvName'], 'w')
+            fh = open(srv['srvName'] + '.json', 'w')
             print("[*] Building server " + str(serverNum) + " / " + str(len(customer['servers'])))
             if self.individualSSHkeys:
                 print("[*] Generating SSH key for: " + srv['srvName'])
@@ -113,13 +113,14 @@ class RackBob:
             # Create server
             print("[*] Creating server: " + srv['srvName'])
             rootPass = self.generate_password(32)
+            rootPassHash = sha512_crypt.encrypt(rootPass)
             srv['rootPass'] = rootPass
             command = "./rack servers instance create --name " + srv['srvName'] + " --image-name '" + srv['imageName'] + "' --flavor-name '" + srv['flavorName'] + "' --networks 00000000-0000-0000-0000-000000000000," + self.networkID + " --admin-pass " + rootPass + " --keypair " + keyName + " --wait-for-completion " + self.postcommand
             resultsDict = json.loads(self.process_command(command)[0])
             serverID = resultsDict['ID']
             print("Server ID: " + resultsDict['ID'])
 
-            # Retreive server information and save to individual file
+            # Retreive final server information
             command = "./rack servers instance get --id " + serverID + self.postcommand
             resultsDict = json.loads(self.process_command(command)[0])
             
@@ -132,11 +133,12 @@ class RackBob:
 
             # Add custom keys to dictionary
             resultsDict['rootPass'] = rootPass
+            resultsDict['rootPassHash'] = rootPassHash
             resultsDict['region'] = srv['region']
             resultsDict['flavorName'] = srv['flavorName']
             resultsDict['imageName'] = srv['imageName']
             
-            # Save dictionary to file
+            # Save dictionary to file for records and/or further processing
             fh.write(json.dumps(resultsDict, sort_keys=False, indent=4, separators=(',', ': ')) + '\n')
         
             serverNum += 1
