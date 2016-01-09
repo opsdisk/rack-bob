@@ -1,0 +1,24 @@
+{   
+    "internalNetworkName": "INTERNAL-NETWORK",
+    "CIDR": "10.10.20.0/24",
+    "networkAndMask": "10.10.20.0 255.255.255.0",
+    "gateway": "10.10.20.1",
+    "allocationPool": "start=10.10.20.2,end=10.10.20.254",
+    "domain": "example.com",
+    "servers": [
+                    {
+                       "region": "DFW",
+                       "srvName": "VPN",
+                       "imageName": "Ubuntu 14.04 LTS (Trusty Tahr) (PVHVM)",
+                       "flavorName": "2 GB General Purpose v1",
+                       "ansibleRoles": ["common", "VPN"]
+                    },
+                    {
+                        "region": "DFW",
+                        "srvName": "DB",  
+                        "imageName": "Ubuntu 14.04 LTS (Trusty Tahr) (PVHVM)",
+                        "flavorName": "2 GB General Purpose v1",
+                        "ansibleRoles": ["common", "DB"]
+                    }                   
+               ]
+}
